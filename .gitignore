@@ -1,0 +1,6 @@
+cmake-build-debug-visual-studio/
+bin/
+out/
+.idea/
+
+data/Scenes/Cache/

@@ -52,6 +52,7 @@ set(PBDWRAPPER_HEADER_FILES
 set(EXPORTER_SOURCE_FILES
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_Partio.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_VTK.cpp
+	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_PLY.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_BIN.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_OBJ.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_PLY.cpp
@@ -62,6 +63,7 @@ set(EXPORTER_HEADER_FILES
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ExporterBase.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_Partio.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_VTK.h
+	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_PLY.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_BIN.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_OBJ.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_PLY.h
@@ -74,6 +76,8 @@ if (USE_EMBEDDED_PYTHON)
 	)
 	set(EMBEDDED_PYTHON_HEADER_FILES
 		${PROJECT_SOURCE_DIR}/Simulator/ScriptObject.h
+			Exporter/ParticleExporter_PLY.cpp
+			Exporter/ParticleExporter_PLY.h
 	)
 endif(USE_EMBEDDED_PYTHON)
 
