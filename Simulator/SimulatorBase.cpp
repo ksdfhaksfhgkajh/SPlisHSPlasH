@@ -912,12 +912,12 @@ void SimulatorBase::timeStep()
 	for (unsigned int i = 0; i < numSteps; i++)
 	{
 		START_TIMING("SimStep");
-		Simulation::getCurrent()->getTimeStep()->step();
+		Simulation::getCurrent()->getTimeStep()->step();    // simulation step, call the simulator here
 		STOP_TIMING_AVG;
 
 		m_boundarySimulator->timeStep();
 
-		step();
+		step(); // // save current state or particles
 
 		INCREASE_COUNTER("Time step size", TimeManager::getCurrent()->getTimeStepSize());
 
@@ -1579,6 +1579,13 @@ void SimulatorBase::step()
 	if (TimeManager::getCurrent()->getTime() >= m_nextFrameTime)
 	{
 		m_nextFrameTime += static_cast<Real>(1.0) / m_framesPerSecond;
+
+        //////////////////////////////////////////////////////////////////////////
+        // projection
+        //////////////////////////////////////////////////////////////////////////
+        if (m_is_project) {
+            particle_project();
+        }
 
 		for (size_t i = 0; i < m_particleExporters.size(); i++)
 		{
@@ -2898,4 +2905,23 @@ void SimulatorBase::writeSceneFile(const std::string &fileName)
 	}
 
 	writer.writeScene(fileName.c_str());
+}
+
+void SimulatorBase::particle_project() {
+    Simulation *sim = Simulation::getCurrent();
+
+    // Only support one phrase fluid
+    FluidModel *model = sim->getFluidModel(0);
+    MeshProjector mesh_projector;
+
+    std::string file_path = "../assets/";
+    std::string file_name("mesh_");
+    file_name += std::to_string(m_frameCounter) + ".ply";
+    file_path += file_name;
+    if  (std::filesystem::exists(file_path)) {
+        mesh_projector.load_mesh(file_path);
+        mesh_projector.move_particles_inside(model);
+    } else {
+        m_is_project = false;
+    }
 }

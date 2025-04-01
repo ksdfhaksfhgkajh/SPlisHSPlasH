@@ -16,6 +16,7 @@ namespace SPH
 		Real time;
 		static TimeManager *current;
 		Real h;
+        unsigned frame_num;
 
 	public:
 		static int TIME_STEP_SIZE;
@@ -32,12 +33,14 @@ namespace SPH
 		static void setCurrent (TimeManager* tm);
 		static bool hasCurrent();
 
-		Real getTime();
+		Real getTime() const;
 		void setTime(Real t);
-		Real getTimeStepSize();
+		Real getTimeStepSize() const;
 		void setTimeStepSize(Real tss);
+        unsigned getFrameNum() const;
+        void increaseFrameNum();
 
-		void saveState(BinaryFileWriter &binWriter);
+		void saveState(BinaryFileWriter &binWriter) const;
 		void loadState(BinaryFileReader &binReader);
 	};
 }

@@ -21,10 +21,7 @@ StaticBoundarySimulator::StaticBoundarySimulator(SimulatorBase *base)
 	m_base = base;
 }
 
-StaticBoundarySimulator::~StaticBoundarySimulator()
-{
-
-}
+StaticBoundarySimulator::~StaticBoundarySimulator() = default;
 
 void StaticBoundarySimulator::initBoundaryData()
 {
@@ -37,7 +34,7 @@ void StaticBoundarySimulator::initBoundaryData()
 	const bool useCache = m_base->getUseParticleCaching() && !scene.sim2D;
 	Simulation *sim = Simulation::getCurrent();
 
-	string cachePath = scene_path + "/Cache";
+	string cachePath = scene_path + "/Cache"; 
 
 	for (unsigned int i = 0; i < scene.boundaryModels.size(); i++)
 	{

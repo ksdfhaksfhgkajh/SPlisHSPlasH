@@ -1,3 +1,6 @@
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(WCSPH_HEADER_FILES
 	WCSPH/SimulationDataWCSPH.h
 	WCSPH/TimeStepWCSPH.h
@@ -235,7 +238,6 @@ add_library(SPlisHSPlasH
 	XSPH.cpp
 	XSPH.h
 
-	
 	${WCSPH_HEADER_FILES}
 	${WCSPH_SOURCE_FILES}
 	
@@ -275,6 +277,7 @@ add_library(SPlisHSPlasH
 	${UTILS_HEADER_FILES}
 	${UTILS_SOURCE_FILES}
 )
+
 
 add_dependencies(SPlisHSPlasH
 	Utilities

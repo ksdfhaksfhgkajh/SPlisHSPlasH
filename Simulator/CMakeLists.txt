@@ -1,5 +1,7 @@
-include(${PROJECT_SOURCE_DIR}/GUI/OpenGL/CMakeLists.txt)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(${PROJECT_SOURCE_DIR}/GUI/OpenGL/CMakeLists.txt)
 include(${PROJECT_SOURCE_DIR}/GUI/imgui/CMakeLists.txt)
 set(SIMULATION_LINK_LIBRARIES imgui ${NFD_LIB} SPlisHSPlasH ${PBD_LIBRARIES} PBD_includes)
 set(SIMULATION_DEPENDENCIES imgui ${NFD_LIB} SPlisHSPlasH Ext_PBD CopySPlisHSPlasHShaders CopyPBDShaders CopyEmitterModels CopyImguiFonts)
@@ -39,6 +41,16 @@ if (USE_EMBEDDED_PYTHON)
 	set(SIMULATION_DEPENDENCIES pysplishsplash_embed ${SIMULATION_DEPENDENCIES})
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	include_directories(/opt/homebrew/include)
+	link_directories(/opt/homebrew/lib)
+	file(GLOB CGAL_LIBRARIES "/opt/homebrew/lib/*.dylib" "/opt/homebrew/lib/*.a")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	file(GLOB CGAL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/thirdParty/lib/.*lib")
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdParty/lib)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdParty/include)
+endif()
+
 set(PBDWRAPPER_SOURCE_FILES	
 	PositionBasedDynamicsWrapper/PBDWrapper.cpp
 	PositionBasedDynamicsWrapper/PBDBoundarySimulator.cpp
@@ -52,6 +64,7 @@ set(PBDWRAPPER_HEADER_FILES
 set(EXPORTER_SOURCE_FILES
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_Partio.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_VTK.cpp
+	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_PLY.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_BIN.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_OBJ.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_PLY.cpp
@@ -62,6 +75,7 @@ set(EXPORTER_HEADER_FILES
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ExporterBase.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_Partio.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_VTK.h
+	${PROJECT_SOURCE_DIR}/Simulator/Exporter/ParticleExporter_PLY.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_BIN.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_OBJ.h
 	${PROJECT_SOURCE_DIR}/Simulator/Exporter/RigidBodyExporter_PLY.h
@@ -87,6 +101,8 @@ add_library(SimulatorBase
 	${PROJECT_SOURCE_DIR}/Simulator/BoundarySimulator.h
 	${PROJECT_SOURCE_DIR}/Simulator/StaticBoundarySimulator.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/StaticBoundarySimulator.h
+	${PROJECT_SOURCE_DIR}/Simulator/MeshProjector.cpp
+	${PROJECT_SOURCE_DIR}/Simulator/MeshProjector.h
 	
 	${PROJECT_SOURCE_DIR}/Simulator/GUI/OpenGL/Simulator_OpenGL.cpp
 	${PROJECT_SOURCE_DIR}/Simulator/GUI/OpenGL/Simulator_OpenGL.h
@@ -117,7 +133,7 @@ set_target_properties(SimulatorBase PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTF
 set_target_properties(SimulatorBase PROPERTIES RELWITHDEBINFO_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
 set_target_properties(SimulatorBase PROPERTIES MINSIZEREL_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
 add_dependencies(SimulatorBase ${SIMULATION_DEPENDENCIES})
-target_link_libraries(SimulatorBase PUBLIC ${SIMULATION_LINK_LIBRARIES})
+target_link_libraries(SimulatorBase PUBLIC ${SIMULATION_LINK_LIBRARIES} ${CGAL_LIBRARIES})
 VIS_SOURCE_GROUPS()
 GUI_SOURCE_GROUPS()
 

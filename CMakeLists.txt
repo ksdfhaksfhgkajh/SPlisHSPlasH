@@ -5,6 +5,9 @@ cmake_minimum_required(VERSION 3.1)
 
 project(SPlisHSPlasH)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -60,7 +63,6 @@ add_subdirectory(Utilities)
 ################################################################################
 if (NOT SPH_LIBS_ONLY)
 	include(DataCopyTargets)
-	add_subdirectory(Tools)
 	add_subdirectory(Simulator)
 	add_subdirectory(Tests)
 	if (USE_PYTHON_BINDINGS)

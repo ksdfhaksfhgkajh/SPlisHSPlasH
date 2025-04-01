@@ -10,11 +10,12 @@ TimeManager::TimeManager ()
 {
 	time = 0;
 	h = static_cast<Real>(0.001);
+    frame_num = 0;
 }
 
 TimeManager::~TimeManager () 
 {
-	current = 0;
+	current = nullptr;
 }
 
 void TimeManager::initParameters()
@@ -29,7 +30,7 @@ void TimeManager::initParameters()
 
 TimeManager* TimeManager::getCurrent ()
 {
-	if (current == 0)
+	if (current == nullptr)
 	{
 		current = new TimeManager ();
 		current->initParameters();
@@ -44,10 +45,10 @@ void TimeManager::setCurrent (TimeManager* tm)
 
 bool TimeManager::hasCurrent()
 {
-	return (current != 0);
+	return (current != nullptr);
 }
 
-Real TimeManager::getTime()
+Real TimeManager::getTime() const
 {
 	return time;
 }
@@ -57,7 +58,7 @@ void TimeManager::setTime(Real t)
 	time = t;
 }
 
-Real TimeManager::getTimeStepSize()
+Real TimeManager::getTimeStepSize() const
 {
 	return h;
 }
@@ -67,7 +68,7 @@ void TimeManager::setTimeStepSize(Real tss)
 	h = tss;
 }
 
-void SPH::TimeManager::saveState(BinaryFileWriter &binWriter)
+void SPH::TimeManager::saveState(BinaryFileWriter &binWriter) const
 {
 	binWriter.write(time);
 	binWriter.write(h);
@@ -77,4 +78,14 @@ void SPH::TimeManager::loadState(BinaryFileReader &binReader)
 {
 	binReader.read(time);
 	binReader.read(h);
+}
+
+unsigned TimeManager::getFrameNum() const
+{
+    return frame_num;
+}
+
+void TimeManager::increaseFrameNum()
+{
+    ++frame_num;
 }

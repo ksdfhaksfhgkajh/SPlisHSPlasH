@@ -12,6 +12,7 @@
 #include "SPlisHSPlasH/TriangleMesh.h"
 #include "BoundarySimulator.h"
 #include <Simulator/ScriptObject.h>
+#include "MeshProjector.h"
 
 namespace SPH
 {
@@ -89,6 +90,7 @@ namespace SPH
 		std::vector<Exporter> m_particleExporters;
 		std::vector<Exporter> m_rbExporters;
 		bool m_updateGUI;
+        bool m_is_project{true};
 #ifdef DL_OUTPUT
 		Real m_nextTiming;
 #endif
@@ -110,6 +112,7 @@ namespace SPH
 		void initExporters();
 		std::string openFileDialog(const std::string& defaultPath, const std::string filterName, const std::string fileFilter);
 		std::string saveFileDialog(const std::string& defaultPath, const std::string& defaultName, const std::string filterName, const std::string fileFilter);
+        void particle_project();
 
 	public:
 		static int PAUSE;

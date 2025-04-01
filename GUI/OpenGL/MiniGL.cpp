@@ -1077,7 +1077,7 @@ void MiniGL::mainLoop()
 	while (!glfwWindowShouldClose(m_glfw_window))
 	{
 		if (idlefunc != nullptr)
-			idlefunc();
+			idlefunc(); // SimulatorBase TimeStep()
 
 		double currentTime = glfwGetTime();
 		if (currentTime - m_lastTime >= 1.0 / 60.0)  // render at maximum at 60 fps
@@ -1088,7 +1088,7 @@ void MiniGL::mainLoop()
 			viewport();
 
 			if (scenefunc != nullptr)
-				scenefunc();
+				scenefunc();    // Simulator GUI imgui render()
 
 			if (selectionMode)
 				drawSelectionRect();

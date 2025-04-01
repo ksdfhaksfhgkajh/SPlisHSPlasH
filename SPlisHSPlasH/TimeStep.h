@@ -22,7 +22,7 @@ namespace SPH
 		unsigned int m_iterations;	
 		Real m_maxError;
 		unsigned int m_minIterations;
-		unsigned int m_maxIterations;	
+		unsigned int m_maxIterations;
 
 		/** Clear accelerations and add gravitation.
 		*/

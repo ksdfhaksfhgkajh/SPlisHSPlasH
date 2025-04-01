@@ -19,7 +19,7 @@ SimulatorBase *base = nullptr;
 Simulator_GUI_Base *gui = nullptr;
 
 // main 
-int main( int argc, char **argv )
+int main(int argc, char **argv)
 {
 	REPORT_MEMORY_LEAKS;
 	base = new SimulatorBase();

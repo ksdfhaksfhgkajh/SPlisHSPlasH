@@ -263,6 +263,7 @@ namespace SPH
 				return m_x[i];
 			}
 
+
 			FORCE_INLINE const Vector3r &getPosition(const unsigned int i) const
 			{
 				return m_x[i];
@@ -272,6 +273,16 @@ namespace SPH
 			{
 				m_x[i] = pos;
 			}
+
+            FORCE_INLINE std::vector<Vector3r> &getAllPosition()
+            {
+                return m_x;
+            }
+
+            FORCE_INLINE const std::vector<Vector3r> &getAllPosition() const
+            {
+                return m_x;
+            }
 
 			FORCE_INLINE Vector3r &getVelocity(const unsigned int i)
 			{

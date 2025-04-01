@@ -2,6 +2,7 @@
 #include "Exporter/ExporterBase.h"
 #include "Exporter/ParticleExporter_Partio.h"
 #include "Exporter/ParticleExporter_VTK.h"
+#include "Exporter/ParticleExporter_PLY.h"
 #include "Exporter/RigidBodyExporter_BIN.h"
 #include "Exporter/RigidBodyExporter_OBJ.h"
 #include "Exporter/RigidBodyExporter_PLY.h"
@@ -13,6 +14,7 @@ void SimulatorBase::createExporters()
 {
 	addParticleExporter("enablePartioExport", "Partio Exporter", "Enable/disable partio export.", new ParticleExporter_Partio(this));
 	addParticleExporter("enableVTKExport", "VTK Exporter", "Enable/disable VTK export.", new ParticleExporter_VTK(this));
+    addParticleExporter("enablePLYExport", "PLY Exporter", "Enable/disable PLY export.", new ParticleExporter_PLY(this));
 
 	addRigidBodyExporter("enableRigidBodyExport", "Rigid Body Exporter", "Enable/disable rigid body BIN export.", new RigidBodyExporter_BIN(this));
 	addRigidBodyExporter("enableRigidBodyOBJExport", "Rigid Body OBJ Exporter", "Enable/disable rigid body OBJ export.", new RigidBodyExporter_OBJ(this));

@@ -109,7 +109,7 @@ Simulation::~Simulation ()
 	current = nullptr;
 }
 
-Simulation* Simulation::getCurrent ()
+Simulation* Simulation::getCurrent()
 {
 	if (current == nullptr)
 	{
