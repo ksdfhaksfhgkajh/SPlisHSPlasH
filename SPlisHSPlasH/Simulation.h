@@ -14,6 +14,7 @@
 #endif
 #include <array>
 #include <algorithm>
+#include "ViscosityPredict/MeshProjector.h"
 
 
 /** Loop over the fluid neighbors of all fluid phases. 
@@ -317,6 +318,7 @@ namespace SPH
 		std::vector<NonPressureForceMethod> m_vorticityMethods;
 		std::vector<NonPressureForceMethod> m_viscoMethods;
 		bool m_simulationIsInitialized;
+		std::unique_ptr<MeshProjector> m_mesh_projector;
 #ifdef USE_DEBUG_TOOLS
 		DebugTools* m_debugTools;
 #endif
@@ -470,6 +472,12 @@ namespace SPH
 			#else
 			return m_neighborhoodSearch->point_set(pointSetIndex).neighbor_list(neighborPointSetIndex, index).data();
 			#endif
+		}
+
+		void particle_project(const unsigned frame_counter);
+
+		bool is_project() const {
+			return	m_mesh_projector->get_is_project();
 		}
 	};
 }

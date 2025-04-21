@@ -12,7 +12,6 @@
 #include "SPlisHSPlasH/TriangleMesh.h"
 #include "BoundarySimulator.h"
 #include <Simulator/ScriptObject.h>
-#include "MeshProjector.h"
 
 namespace SPH
 {
@@ -90,7 +89,6 @@ namespace SPH
 		std::vector<Exporter> m_particleExporters;
 		std::vector<Exporter> m_rbExporters;
 		bool m_updateGUI;
-        bool m_is_project{true};
 #ifdef DL_OUTPUT
 		Real m_nextTiming;
 #endif

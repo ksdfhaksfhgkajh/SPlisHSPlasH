@@ -1583,9 +1583,9 @@ void SimulatorBase::step()
         //////////////////////////////////////////////////////////////////////////
         // projection
         //////////////////////////////////////////////////////////////////////////
-        if (m_is_project) {
-            particle_project();
-        }
+		if (Simulation::getCurrent()->is_project()) {
+			Simulation::getCurrent()->particle_project(m_frameCounter);
+		}
 
 		for (size_t i = 0; i < m_particleExporters.size(); i++)
 		{
@@ -1594,7 +1594,7 @@ void SimulatorBase::step()
 		for (size_t i = 0; i < m_rbExporters.size(); i++)
 			m_rbExporters[i].m_exporter->step(m_frameCounter);
 
-		m_frameCounter++;
+		++m_frameCounter;
 	}
 	if (TimeManager::getCurrent()->getTime() >= m_nextFrameTimeState)
 	{
@@ -2905,23 +2905,4 @@ void SimulatorBase::writeSceneFile(const std::string &fileName)
 	}
 
 	writer.writeScene(fileName.c_str());
-}
-
-void SimulatorBase::particle_project() {
-    Simulation *sim = Simulation::getCurrent();
-
-    // Only support one phrase fluid
-    FluidModel *model = sim->getFluidModel(0);
-    MeshProjector mesh_projector;
-
-    std::string file_path = "../assets/";
-    std::string file_name("mesh_");
-    file_name += std::to_string(m_frameCounter) + ".ply";
-    file_path += file_name;
-    if  (std::filesystem::exists(file_path)) {
-        mesh_projector.load_mesh(file_path);
-        mesh_projector.move_particles_inside(model);
-    } else {
-        m_is_project = false;
-    }
 }

@@ -1,6 +1,9 @@
 #include "MeshProjector.h"
 
 bool MeshProjector::load_mesh(const std::string &filepath) {
+    if (!m_mesh.is_empty()) {
+        m_mesh.clear();
+    }
     if (!CGAL::IO::read_PLY(filepath, m_mesh)) {
         std::cerr << "read mesh PLY error: " << filepath << std::endl;
         return false;

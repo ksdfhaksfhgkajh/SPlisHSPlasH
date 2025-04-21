@@ -86,6 +86,8 @@ Simulation::Simulation ()
 
 	m_animationFieldSystem = new AnimationFieldSystem();
 	m_boundaryHandlingMethod = static_cast<int>(BoundaryHandlingMethods::Bender2019);
+
+	m_mesh_projector = std::make_unique<MeshProjector>();
 }
 
 Simulation::~Simulation () 
@@ -771,5 +773,21 @@ void SPH::Simulation::loadState(BinaryFileReader &binReader)
 	for (unsigned int i = 0; i < numberOfBoundaryModels(); i++)
 		getBoundaryModel(i)->loadState(binReader);
 	m_timeStep->loadState(binReader);
+}
+
+void Simulation::particle_project(const unsigned frame_counter) {
+	// Only support one phrase fluid
+	if (numberOfFluidModels() > 1) return;
+
+	std::string file_path = "../assets/";
+	std::string file_name("mesh_");
+	file_name += std::to_string(frame_counter) + ".ply";
+	file_path += file_name;
+	if  (std::filesystem::exists(file_path)) {
+		m_mesh_projector->load_mesh(file_path);
+		m_mesh_projector->move_particles_inside(getFluidModel(0));
+	} else {
+		m_mesh_projector->reset_is_project();
+	}
 }
 

@@ -35,6 +35,7 @@ private:
     Mesh m_mesh;
     Tree m_tree;
     std::unique_ptr<Inside_tester> m_inside_tester;
+    bool m_is_project;
 
     static void m_fill_holes_on_mesh(Mesh& mesh);
     bool m_is_inside_mesh(const Point& particle) const;
@@ -43,9 +44,17 @@ private:
     static Vector3r m_cgalPoint_to_eigen(const Point &p);
 
 public:
+    MeshProjector() : m_is_project(true) {}
     bool load_mesh(const std::string& filepath);
     double project_particles(SPH::FluidModel* model) const;
     void move_particles_inside(SPH::FluidModel* model) const;
+
+    void reset_is_project() {
+        m_is_project = false;
+    }
+    bool get_is_project() const {
+        return m_is_project;
+    }
 };
 
 #endif

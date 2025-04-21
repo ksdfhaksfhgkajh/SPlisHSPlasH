@@ -1,6 +1,15 @@
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	include_directories(/opt/homebrew/include)
+	link_directories(/opt/homebrew/lib)
+	file(GLOB CGAL_LIBRARIES "/opt/homebrew/lib/*.a")
+	include_directories(../extern/libcmaes/include)
+	link_directories(../extern/libcmaes/lib)
+	file(GLOB CMAES_LIBARIES "../extern/libcmaes/lib/*.a")
+endif()
+
 set(WCSPH_HEADER_FILES
 	WCSPH/SimulationDataWCSPH.h
 	WCSPH/TimeStepWCSPH.h
@@ -107,8 +116,16 @@ set(VISCOSITY_SOURCE_FILES
 	Viscosity/Viscosity_Peer2016.cpp
 	Viscosity/Viscosity_Takahashi2015.cpp
 	Viscosity/Viscosity_Weiler2018.cpp
-	)	
-	
+	)
+
+set(VISCOSITY_PREDICT_HEADER_FILES
+		ViscosityPredict/MeshProjector.h
+)
+
+set(VISCOSITY_PREDICT_SOURCE_FILES
+		ViscosityPredict/MeshProjector.cpp
+)
+
 set(VORTICITY_HEADER_FILES
 	Vorticity/VorticityBase.h
 	Vorticity/MicropolarModel_Bender2017.h
@@ -261,6 +278,9 @@ add_library(SPlisHSPlasH
 	
 	${VISCOSITY_HEADER_FILES}
 	${VISCOSITY_SOURCE_FILES}
+
+	${VISCOSITY_PREDICT_HEADER_FILES}
+	${VISCOSITY_PREDICT_SOURCE_FILES}
 	
 	${SURFACETENSION_HEADER_FILES}
 	${SURFACETENSION_SOURCE_FILES}
@@ -300,6 +320,8 @@ target_link_libraries(SPlisHSPlasH
 	INTERFACE
 	${NEIGHBORHOOD_SEARCH_LIBRARIES}
 	${DISCREGRID_LIBRARIES}
+	${CGAL_LIBRARIES}
+	${CMAES_LIBARIES}
 )
 
 source_group("Header Files\\WCSPH" FILES ${WCSPH_HEADER_FILES})
@@ -318,6 +340,8 @@ source_group("Header Files\\ICSPH" FILES ${ICSPH_HEADER_FILES})
 source_group("Source Files\\ICSPH" FILES ${ICSPH_SOURCE_FILES})
 source_group("Header Files\\Viscosity" FILES ${VISCOSITY_HEADER_FILES})
 source_group("Source Files\\Viscosity" FILES ${VISCOSITY_SOURCE_FILES})
+source_group("Header Files\\ViscosityPredict" FILES ${VISCOSITY_PREDICT_HEADER_FILES})
+source_group("Source Files\\ViscosityPredict" FILES ${VISCOSITY_PREDICT_SOURCE_FILES})
 source_group("Header Files\\SurfaceTension" FILES ${SURFACETENSION_HEADER_FILES})
 source_group("Source Files\\SurfaceTension" FILES ${SURFACETENSION_SOURCE_FILES})
 source_group("Header Files\\Vorticity" FILES ${VORTICITY_HEADER_FILES})
