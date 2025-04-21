@@ -1,0 +1,12 @@
+prefix=/Users/nullptr/Desktop/libcmaes/build-static/cmaeslib
+exec_prefix=/Users/nullptr/Desktop/libcmaes/build-static/cmaeslib
+libdir=/Users/nullptr/Desktop/libcmaes/build-static/cmaeslib/lib
+includedir=/Users/nullptr/Desktop/libcmaes/build-static/cmaeslib/include/libcmaes
+
+Name: libcmaes
+Description: libcmaes is a multithreaded C++11 library for high performance blackbox stochastic optimization using the CMA-ES algorithm for Covariance Matrix Adaptation Evolution Strategy
+URL: https://github.com/beniz/libcmaes
+Version: 
+Requires: eigen3
+Libs: -L/Users/nullptr/Desktop/libcmaes/build-static/cmaeslib/lib -lcmaes
+Cflags: -I/Users/nullptr/Desktop/libcmaes/build-static/cmaeslib/include/libcmaes -fPIC -std=c++11 -fopenmp
