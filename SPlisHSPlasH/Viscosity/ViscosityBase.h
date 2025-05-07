@@ -21,6 +21,9 @@ namespace SPH
 
 		ViscosityBase(FluidModel *model);
 		virtual ~ViscosityBase(void);
+
+		void setViscosity(const Real v) { m_viscosity = v; }
+		Real getViscosity() const { return m_viscosity; }
 	};
 }
 

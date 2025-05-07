@@ -20,6 +20,23 @@ namespace SPH
 			BoundaryModel();
 			virtual ~BoundaryModel();
 
+		struct BoundaryModelState
+		{
+			/* --- RigidBodyObject 的核心状态 --- */
+			Vector3r     position;          // 质心坐标
+			Quaternionr  rotation;          // 姿态
+			Vector3r     velocity;          // 线速度
+			Vector3r     angularVelocity;   // 角速度
+			bool         isDynamic;         // 动静态标记，可选
+
+			/* --- 每线程累计的力 / 矩 --- */
+			std::vector<Vector3r> forcePerThread;
+			std::vector<Vector3r> torquePerThread;
+
+			Real max_dist{0.0};
+			Real max_vel{0.0};
+		};
+
 		protected:
 			RigidBodyObject *m_rigidBody;
 			std::vector<Vector3r> m_forcePerThread;
@@ -32,6 +49,9 @@ namespace SPH
 
 			virtual void saveState(BinaryFileWriter &binWriter) {};
 			virtual void loadState(BinaryFileReader &binReader) {};
+
+			virtual BoundaryModelState save_state() const;
+			virtual void load_state(const BoundaryModelState &state);
 
 			RigidBodyObject* getRigidBodyObject() { return m_rigidBody; }
 

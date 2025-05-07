@@ -218,7 +218,7 @@ void TimeStepDFSPH::step()
     // Compute new time
     //////////////////////////////////////////////////////////////////////////
     tm->setTime (tm->getTime () + h);
-    tm->increaseFrameNum();
+	tm->setFrame(tm->getFrame() + 1);
 }
 
 
@@ -1394,3 +1394,15 @@ Real TimeStepDFSPH::compute_aij_pj(const unsigned int fluidModelIndex, const uns
 
 
 #endif
+
+TimeStep::TimeStepState TimeStepDFSPH::save_state() const {
+	TimeStepState state = TimeStep::save_state();
+	state.iterations = m_iterationsV;
+	state.sim_data_dfsph = m_simulationData;
+	return state;
+}
+void TimeStepDFSPH::load_state(const TimeStepState& state) {
+	m_iterations = state.iterations;
+	m_iterationsV = state.iterationsV;
+	m_simulationData = state.sim_data_dfsph;
+}

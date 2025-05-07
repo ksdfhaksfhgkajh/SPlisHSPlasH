@@ -9,15 +9,13 @@
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_face_graph_triangle_primitive.h>
 #include <CGAL/AABB_traits_3.h>
+#include <CGAL/Polygon_mesh_processing/bbox.h>
 
 #include "SPlisHSPlasH/Common.h"
 #include "SPlisHSPlasH/FluidModel.h"
 
 #include <vector>
-#include <cmath>
-#include <iostream>
 #include <random>   // std::mt19937, std::uniform_real_distribution
-#include <chrono>   // std::chrono::system_clock
 
 class MeshProjector {
 public:
@@ -36,6 +34,7 @@ private:
     Tree m_tree;
     std::unique_ptr<Inside_tester> m_inside_tester;
     bool m_is_project;
+    std::vector<Kernel::Point_3> m_interior_samples;
 
     static void m_fill_holes_on_mesh(Mesh& mesh);
     bool m_is_inside_mesh(const Point& particle) const;
@@ -47,7 +46,13 @@ public:
     MeshProjector() : m_is_project(true) {}
     bool load_mesh(const std::string& filepath);
     double project_particles(SPH::FluidModel* model) const;
-    void move_particles_inside(SPH::FluidModel* model) const;
+    void move_particles_inside(SPH::FluidModel* model, const unsigned particle_num) const;
+
+    void sample_interior_points(std::size_t num_samples);
+    double projection_loss_with_interior(
+        const std::vector<Vector3r> &particlePositions,
+        const unsigned activate_num,
+        bool use_square_error = true) const;
 
     void reset_is_project() {
         m_is_project = false;

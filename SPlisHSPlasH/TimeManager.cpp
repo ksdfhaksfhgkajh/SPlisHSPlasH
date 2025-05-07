@@ -80,12 +80,11 @@ void SPH::TimeManager::loadState(BinaryFileReader &binReader)
 	binReader.read(h);
 }
 
-unsigned TimeManager::getFrameNum() const
-{
-    return frame_num;
+unsigned TimeManager::getFrame() const {
+	return frame_num;
+}
+void TimeManager::setFrame(unsigned fr) {
+	frame_num = fr;
 }
 
-void TimeManager::increaseFrameNum()
-{
-    ++frame_num;
-}
+

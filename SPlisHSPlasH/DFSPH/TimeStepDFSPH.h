@@ -62,6 +62,9 @@ namespace SPH
 		virtual void reset();
 
 		virtual void resize();
+
+		TimeStepState save_state() const override;
+		void load_state(const TimeStepState& state) override;
 	};
 }
 

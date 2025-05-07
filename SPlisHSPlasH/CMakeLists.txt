@@ -8,6 +8,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	include_directories(../extern/libcmaes/include)
 	link_directories(../extern/libcmaes/lib)
 	file(GLOB CMAES_LIBARIES "../extern/libcmaes/lib/*.a")
+	file(GLOB CMAES_INCLUDE_DIR "../extern/libcmaes/include")
 endif()
 
 set(WCSPH_HEADER_FILES
@@ -313,6 +314,7 @@ target_include_directories(SPlisHSPlasH PUBLIC
 	${NEIGHBORHOOD_SEARCH_INCLUDE_DIR}
 	${GENERICPARAMETERS_INCLUDE_DIR}
 	${DISCREGRID_INCLUDE_DIR}
+	${CMAES_INCLUDE_DIR}
 )
 
 target_link_libraries(SPlisHSPlasH

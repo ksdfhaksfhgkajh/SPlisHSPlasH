@@ -4,6 +4,7 @@
 #include "ParameterObject.h"
 #include "FluidModel.h"
 #include "BoundaryModel.h"
+#include "DFSPH/SimulationDataDFSPH.h"
 #include "Discregrid/discrete_grid.hpp"
 
 namespace SPH
@@ -17,6 +18,13 @@ namespace SPH
 		static int MIN_ITERATIONS;
 		static int MAX_ITERATIONS;
 		static int MAX_ERROR;
+
+		struct TimeStepState {
+			unsigned int iterations;
+
+			unsigned int iterationsV{0};
+			SimulationDataDFSPH sim_data_dfsph;
+		};
 
 	protected:
 		unsigned int m_iterations;	
@@ -59,6 +67,9 @@ namespace SPH
 
 		virtual void saveState(BinaryFileWriter &binWriter) {};
 		virtual void loadState(BinaryFileReader &binReader) {};
+
+		virtual TimeStepState save_state() const;
+		virtual void load_state(const TimeStepState& state);
 
 #ifdef USE_PERFORMANCE_OPTIMIZATION
 		void precomputeValues();

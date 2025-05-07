@@ -703,7 +703,7 @@ void FluidModel::addField(const FieldDescription &field)
 
 void FluidModel::removeFieldByName(const std::string &fieldName)
 {
-	for (auto it = m_fields.begin(); it != m_fields.end(); it++)
+	for (auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
 		if (it->name == fieldName)
 		{
@@ -758,3 +758,46 @@ void SPH::FluidModel::loadState(BinaryFileReader &binReader)
 	m_emitterSystem->loadState(binReader);
 }
 
+FluidModel::FluidModelState FluidModel::save_state() const {
+	FluidModelState state;
+	state.position = m_x;
+	state.velocity = m_v;
+	state.acceleration = m_a;
+	state.density = m_density;
+	state.n_points = numActiveParticles();
+	return state;
+}
+
+void FluidModel::load_state(const FluidModelState &state) {
+	setNumActiveParticles(state.n_points);
+	m_x = state.position;
+	m_v = state.velocity;
+	m_a = state.acceleration;
+	m_density = state.density;
+	// reset Neighbor
+	NeighborhoodSearch *neighborhoodSearch = Simulation::getCurrent()->getNeighborhoodSearch();
+	if (neighborhoodSearch->point_set(m_pointSetIndex).n_points() != state.n_points)
+		neighborhoodSearch->resize_point_set(m_pointSetIndex, &getPosition(0)[0], state.n_points);
+}
+
+void FluidModel::load_init_state() {
+	setNumActiveParticles(m_numActiveParticles0);
+	const unsigned int nPoints = numActiveParticles();
+
+	// use numParticles since numActiveParticles is already reset
+	for (unsigned int i = 0; i < numParticles(); i++)
+	{
+		const Vector3r& x0 = getPosition0(i);
+		getPosition(i) = x0;
+		getVelocity(i) = getVelocity0(i);
+		getAcceleration(i).setZero();
+		m_objectId[i] = m_objectId0[i];
+		m_density[i] = 0.0;
+		m_particleId[i] = i;
+		m_particleState[i] = ParticleState::Active;
+	}
+
+	NeighborhoodSearch *neighborhoodSearch = Simulation::getCurrent()->getNeighborhoodSearch();
+	if (neighborhoodSearch->point_set(m_pointSetIndex).n_points() != nPoints)
+		neighborhoodSearch->resize_point_set(m_pointSetIndex, &getPosition(0)[0], nPoints);
+}

@@ -25,7 +25,6 @@ namespace SPH
 			BoundaryModel_Bender2019();
 			virtual ~BoundaryModel_Bender2019();
 
-
 	protected:
 			// Density or volume map 
 			Discregrid::DiscreteGrid *m_map;
@@ -40,6 +39,9 @@ namespace SPH
 			void initModel(RigidBodyObject *rbo);
 
 			virtual void reset();
+
+			BoundaryModelState save_state() const override;
+			void load_state(const BoundaryModelState &state) override;
 
 			Discregrid::DiscreteGrid *getMap() { return m_map; }
 			void setMap(Discregrid::DiscreteGrid *map) { m_map = map; }

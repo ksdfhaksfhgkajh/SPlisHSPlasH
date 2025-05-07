@@ -32,6 +32,10 @@ Please get in contact for feedback/support.
 #ifndef __SURFACETENSION_ZORILLA2020_H__
 #define __SURFACETENSION_ZORILLA2020_H__
 
+#ifdef VERSION
+#  undef VERSION
+#endif
+
 #include "SPlisHSPlasH/Common.h"
 #include "SPlisHSPlasH/FluidModel.h"
 #include "Utilities/StringTools.h"

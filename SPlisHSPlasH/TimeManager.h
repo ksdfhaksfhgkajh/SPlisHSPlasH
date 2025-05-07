@@ -37,8 +37,8 @@ namespace SPH
 		void setTime(Real t);
 		Real getTimeStepSize() const;
 		void setTimeStepSize(Real tss);
-        unsigned getFrameNum() const;
-        void increaseFrameNum();
+		unsigned getFrame() const;
+		void setFrame(unsigned fr);
 
 		void saveState(BinaryFileWriter &binWriter) const;
 		void loadState(BinaryFileReader &binReader);

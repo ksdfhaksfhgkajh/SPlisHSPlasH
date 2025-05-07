@@ -52,3 +52,34 @@ void BoundaryModel::clearForceAndTorque()
 		m_torquePerThread[j].setZero();
 	}
 }
+
+BoundaryModel::BoundaryModelState BoundaryModel::save_state() const
+{
+	BoundaryModelState s;
+
+	// 1) 刚体状态 -------------------------------------------
+	s.position        = m_rigidBody->getPosition();
+	s.rotation        = m_rigidBody->getRotation();
+	s.velocity        = m_rigidBody->getVelocity();
+	s.angularVelocity = m_rigidBody->getAngularVelocity();
+	s.isDynamic       = m_rigidBody->isDynamic();
+
+	// 2) 力 / 矩 ---------------------------------------------
+	s.forcePerThread  = m_forcePerThread;   // 直接拷贝
+	s.torquePerThread = m_torquePerThread;
+
+	return s;     // 返回值拷贝或 NRVO
+}
+
+void BoundaryModel::load_state(const BoundaryModelState &s)
+{
+	// 1) 还原刚体状态 ---------------------------------------
+	m_rigidBody->setPosition       (s.position);
+	m_rigidBody->setRotation       (s.rotation);
+	m_rigidBody->setVelocity       (s.velocity);
+	m_rigidBody->setAngularVelocity(s.angularVelocity);
+
+	// 2) 线程局部力 / 矩 -------------------------------------
+	m_forcePerThread  = s.forcePerThread;
+	m_torquePerThread = s.torquePerThread;
+}

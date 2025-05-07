@@ -30,8 +30,7 @@ double MeshProjector::project_particles(SPH::FluidModel* model) const {
     return distance_sum;
 }
 
-void MeshProjector::move_particles_inside(SPH::FluidModel* model) const {
-    unsigned int particle_num = model->getAllPosition().size();
+void MeshProjector::move_particles_inside(SPH::FluidModel* model, const unsigned particle_num) const {
 
     // 1 find all the particles in the mesh
     std::vector<unsigned int> inside_indices;
@@ -126,4 +125,102 @@ Vector3r MeshProjector::m_cgalPoint_to_eigen(const Point &p){
             static_cast<Real>(p.y()),
             static_cast<Real>(p.z())
     };
+}
+
+void MeshProjector::sample_interior_points(std::size_t num_samples) {
+    m_interior_samples.clear();
+    if (m_mesh.is_empty() || num_samples == 0) return;
+
+    // Build a point-in-polyhedron tester
+    CGAL::Side_of_triangle_mesh<Mesh, Kernel> point_inside(m_mesh);
+
+    // Compute mesh bounding box
+    CGAL::Bbox_3 bb = CGAL::Polygon_mesh_processing::bbox(m_mesh);
+    std::mt19937_64 gen((unsigned)std::random_device{}());
+    std::uniform_real_distribution<double> dx(bb.xmin(), bb.xmax());
+    std::uniform_real_distribution<double> dy(bb.ymin(), bb.ymax());
+    std::uniform_real_distribution<double> dz(bb.zmin(), bb.zmax());
+
+    // Sample until we have enough interior points
+    while (m_interior_samples.size() < num_samples)
+    {
+        Kernel::Point_3 p(dx(gen), dy(gen), dz(gen));
+        if (point_inside(p) == CGAL::ON_BOUNDED_SIDE)
+            m_interior_samples.push_back(p);
+    }
+}
+
+
+double MeshProjector::projection_loss_with_interior(
+    const std::vector<Vector3r> &pts,
+    const unsigned activate_num,
+    bool use_square_error) const {
+    if (pts.empty()) return 0.0;
+    // 1) Outside particles loss to mesh surface
+    double sum_out = 0.0;
+    const int N = static_cast<int>(activate_num);
+
+    // CGAL::Side_of_triangle_mesh<Mesh, Kernel> point_inside(m_mesh);
+    // int i = 0;
+    // for (auto const &v : pts)
+    // {
+    //     if (i >= N) break;
+    //     ++i;
+    //     Kernel::Point_3 p(v.x(), v.y(), v.z());
+    //     if (point_inside(p) == CGAL::ON_UNBOUNDED_SIDE)
+    //     {
+    //         Kernel::Point_3 c = m_tree.closest_point(p);
+    //         double sqd = CGAL::squared_distance(p, c);
+    //         sum_out += (use_square_error ? sqd : std::sqrt(sqd));
+    //     }
+    // }
+
+    #pragma omp parallel reduction(+:sum_out)
+    {
+        CGAL::Side_of_triangle_mesh<Mesh, Kernel> point_inside(m_mesh);
+        #pragma omp for schedule(static)
+        for (int i = 0; i < N; i++) {
+            Kernel::Point_3 p(pts[i].x(), pts[i].y(), pts[i].z());
+            if (point_inside(p) == CGAL::ON_UNBOUNDED_SIDE) {
+                Kernel::Point_3 c = m_tree.closest_point(p);
+                double sqd = CGAL::squared_distance(p, c);
+                sum_out += (use_square_error ? sqd : std::sqrt(sqd));
+            }
+        }
+    }
+
+    // 2) Interior samples loss to fluid particles via KD-search
+    using Traits = CGAL::Search_traits_3<Kernel>;
+    using Neighbor_search = CGAL::Orthogonal_k_neighbor_search<Traits>;
+    using Tree3 = Neighbor_search::Tree;
+
+    // Build KD-tree on fluid positions
+    std::vector<Kernel::Point_3> fluid_pts;
+    fluid_pts.reserve(N);
+    for (int i = 0; i < N; ++i) {
+        fluid_pts.emplace_back(pts[i].x(), pts[i].y(), pts[i].z());
+    }
+    Tree3 tree3(fluid_pts.begin(), fluid_pts.end());
+
+    double sum_in = 0.0;
+    const int M = m_interior_samples.size();
+    // for (auto const &sp : m_interior_samples)
+    // {
+    //     Neighbor_search search(tree3, sp, 1);
+    //     double sqd = search.begin()->second;
+    //     sum_in += (use_square_error ? sqd : std::sqrt(sqd));
+    // }
+    #pragma omp parallel reduction(+:sum_in)
+    {
+        #pragma omp for schedule(static)
+        for (int i =0; i < M; i++) {
+            Neighbor_search search(tree3, m_interior_samples[i], 1);
+            double sqd = search.begin()->second;
+            sum_in += (use_square_error ? sqd : std::sqrt(sqd));
+        }
+    }
+    // Return average loss
+    double total = sum_out + sum_in;
+    // return total / static_cast<double>(N + M);
+    return total;
 }

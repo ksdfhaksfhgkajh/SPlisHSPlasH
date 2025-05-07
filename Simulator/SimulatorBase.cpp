@@ -1574,17 +1574,31 @@ void SimulatorBase::particleInfo(std::vector<std::vector<unsigned int>> &particl
 	}
 }
 
+
 void SimulatorBase::step()
 {
 	if (TimeManager::getCurrent()->getTime() >= m_nextFrameTime)
 	{
-		m_nextFrameTime += static_cast<Real>(1.0) / m_framesPerSecond;
-
         //////////////////////////////////////////////////////////////////////////
         // projection
         //////////////////////////////////////////////////////////////////////////
 		if (Simulation::getCurrent()->is_project()) {
-			Simulation::getCurrent()->particle_project(m_frameCounter);
+			// Simulation::getCurrent()->particle_project(m_frameCounter);
+
+			// static unsigned prev_frame;
+			// if (m_frameCounter == 1) prev_frame = m_frameCounter;
+			// if (m_frameCounter > 1 && Simulation::getCurrent()->load_mesh(m_frameCounter + 1)) {
+			// 	const unsigned fluid_frame = TimeManager::getCurrent()->getFrame();
+			// 	const unsigned frame_interval = fluid_frame - prev_frame;
+			// 	Simulation::getCurrent()->viscosity_predict(frame_interval);
+			// 	prev_frame = fluid_frame - prev_frame;
+			// }
+
+			if (m_frameCounter > 4 && m_frameCounter % 5 == 0 && Simulation::getCurrent()->load_mesh(m_frameCounter)) {
+				const unsigned fluid_frame = TimeManager::getCurrent()->getFrame();
+				Simulation::getCurrent()->viscosity_predict(fluid_frame);
+			}
+			// Simulation::getCurrent()->particle_project(m_frameCounter);
 		}
 
 		for (size_t i = 0; i < m_particleExporters.size(); i++)
@@ -1594,6 +1608,7 @@ void SimulatorBase::step()
 		for (size_t i = 0; i < m_rbExporters.size(); i++)
 			m_rbExporters[i].m_exporter->step(m_frameCounter);
 
+		m_nextFrameTime += static_cast<Real>(1.0) / m_framesPerSecond;
 		++m_frameCounter;
 	}
 	if (TimeManager::getCurrent()->getTime() >= m_nextFrameTimeState)

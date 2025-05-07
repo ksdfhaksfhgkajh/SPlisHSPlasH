@@ -564,3 +564,13 @@ void TimeStep::precomputeValues()
 
 #endif
 
+TimeStep::TimeStepState TimeStep::save_state() const {
+	TimeStepState state;
+	state.iterations = m_iterations;
+	return state;
+}
+
+void TimeStep::load_state(const TimeStepState& state) {
+	m_iterations = state.iterations;
+}
+

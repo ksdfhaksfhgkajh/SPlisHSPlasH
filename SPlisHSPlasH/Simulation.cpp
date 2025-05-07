@@ -13,6 +13,7 @@
 #include "BoundaryModel_Akinci2012.h"
 #include "BoundaryModel_Bender2019.h"
 #include "BoundaryModel_Koschier2017.h"
+#include "Viscosity/ViscosityBase.h"
 
 
 using namespace SPH;
@@ -785,9 +786,104 @@ void Simulation::particle_project(const unsigned frame_counter) {
 	file_path += file_name;
 	if  (std::filesystem::exists(file_path)) {
 		m_mesh_projector->load_mesh(file_path);
-		m_mesh_projector->move_particles_inside(getFluidModel(0));
+		m_mesh_projector->move_particles_inside(getFluidModel(0), getFluidModel(0)->numActiveParticles());
 	} else {
 		m_mesh_projector->reset_is_project();
 	}
 }
 
+bool Simulation::load_mesh(const unsigned frame_counter) {
+	std::string file_path = "../assets/";
+	std::string file_name("mesh_");
+	file_name += std::to_string(frame_counter) + ".ply";
+	file_path += file_name;
+	if  (std::filesystem::exists(file_path)) {
+		m_mesh_projector->load_mesh(file_path);
+		return true;
+	}
+	return false;
+}
+
+double Simulation::calcu_one_step_loss(const double *viscosity, const int viscosity_dimension) {
+	const auto fm = getFluidModel(0);
+
+	// save state
+	const FluidModel::FluidModelState start_state = fm->save_state();
+	const Real current_time = TimeManager::getCurrent()->getTime();
+	const unsigned current_frame_number = TimeManager::getCurrent()->getFrame();
+	unsigned prev_counter = m_counter;
+	std::vector<BoundaryModel::BoundaryModelState> boundary_states;
+	for (unsigned int i = 0; i < numberOfBoundaryModels(); i++) {
+		BoundaryModel::BoundaryModelState s = getBoundaryModel(i)->save_state();
+		boundary_states.push_back(std::move(s));
+	}
+	TimeStep::TimeStepState time_step_state = m_timeStep->save_state();
+
+	// load init state
+	TimeManager::getCurrent()->setTime(0.0);
+	TimeManager::getCurrent()->setFrame(0);
+	fm->load_init_state();
+	for (unsigned int i = 0; i < numberOfBoundaryModels(); i++)
+		getBoundaryModel(i)->reset();
+	m_counter = 0;
+	if (m_timeStep)
+		m_timeStep->reset();
+
+	fm->getViscosityBase()->setViscosity(static_cast<Real>(viscosity[0])); // change vis
+	for (int i = 0; i < m_frame_interval; ++i) {
+		getTimeStep()->step(); // run single step simulation
+	}
+
+	m_mesh_projector->sample_interior_points(fm->numActiveParticles());
+	const double loss = m_mesh_projector->projection_loss_with_interior(
+		fm->getAllPosition(),
+		fm->numActiveParticles(),
+		true
+	);
+
+	// load former state
+	fm->load_state(start_state);
+	for (unsigned int i = 0; i < numberOfBoundaryModels(); i++) {
+			getBoundaryModel(i)->load_state(boundary_states[i]);
+	}
+	m_timeStep->load_state(time_step_state);
+	m_counter = prev_counter;
+	performNeighborhoodSearchSort();
+	TimeManager::getCurrent()->setTime(current_time);
+	TimeManager::getCurrent()->setFrame(current_frame_number);
+
+	return loss;
+}
+
+void Simulation::viscosity_predict(const unsigned frame_interval) {
+	const Real vis_prev = getFluidModel(0)->getViscosityBase()->getViscosity();
+	const double sigma = std::max(2.0 * vis_prev, 0.1);
+	m_frame_interval = frame_interval;
+	const std::vector<double> x0{ vis_prev };
+	libcmaes::CMAParameters<> cmaparams(1, x0.data(), sigma);
+
+	cmaparams.set_ftarget(5.0);	// stop
+	cmaparams.set_max_fevals(50);
+	libcmaes::FitFunc fsphere =
+	  std::bind(&Simulation::calcu_one_step_loss,
+				this,
+				std::placeholders::_1,
+				std::placeholders::_2);
+
+	const libcmaes::CMASolutions cmasols = libcmaes::cmaes<>(fsphere, cmaparams);
+	const auto best = cmasols.best_candidate();
+	const double vis_opt = best.get_x()[0];
+	const double fopt  = best.get_fvalue();
+
+	// const double lamda = exp(-abs(vis_prev - std::max(0.0, vis_opt)));
+	// const double vis_accum = (1.0 - lamda) * vis_opt + lamda * vis_prev;
+	const double vis_accum = vis_opt;
+
+	if (vis_accum < 0) {
+		getFluidModel(0)->getViscosityBase()->setViscosity(0.0);
+		std::cout << "best loss = " << fopt << ", viscosity = " << vis_accum << " reset to 0.0" << ", vis_opt = " << vis_opt << std::endl;
+		return;
+	}
+	getFluidModel(0)->getViscosityBase()->setViscosity(static_cast<Real>(vis_accum));
+	std::cout << "best loss = " << fopt << ", viscosity = " << vis_accum << ", vis_opt = " << vis_opt << std::endl;
+}

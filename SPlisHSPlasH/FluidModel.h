@@ -103,6 +103,20 @@ namespace SPH
 
 			std::string getId() const { return m_id; }
 
+			// Memento help return to former step
+			struct FluidModelState {
+				std::vector<Vector3r> position;
+				std::vector<Vector3r> velocity;
+				std::vector<Vector3r> acceleration;
+				std::vector<Real>     density;
+				unsigned int n_points;
+			};
+
+			FluidModelState save_state() const;
+			void load_state(const FluidModelState &state);
+			void load_init_state();
+
+
 		protected:
 			std::string m_id;
 			EmitterSystem *m_emitterSystem;
@@ -283,6 +297,26 @@ namespace SPH
             {
                 return m_x;
             }
+
+			FORCE_INLINE void setAllPosition(const std::vector<Vector3r> &pos)
+			{
+				m_x = pos;
+			}
+
+			FORCE_INLINE std::vector<Vector3r> &getAllVelocity()
+			{
+				return m_v;
+			}
+
+			FORCE_INLINE const std::vector<Vector3r> &getAllVelocity() const
+			{
+				return m_v;
+			}
+
+			FORCE_INLINE void setAllVelocity(const std::vector<Vector3r> &vel)
+			{
+				m_v = vel;
+			}
 
 			FORCE_INLINE Vector3r &getVelocity(const unsigned int i)
 			{
