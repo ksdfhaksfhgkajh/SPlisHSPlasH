@@ -63,7 +63,7 @@ namespace SPH
 
 		virtual void resize();
 
-		TimeStepState save_state() const override;
+		std::unique_ptr<TimeStepState> save_state() const override;
 		void load_state(const TimeStepState& state) override;
 	};
 }

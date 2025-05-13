@@ -786,7 +786,7 @@ void Simulation::particle_project(const unsigned frame_counter) {
 	file_path += file_name;
 	if  (std::filesystem::exists(file_path)) {
 		m_mesh_projector->load_mesh(file_path);
-		m_mesh_projector->move_particles_inside(getFluidModel(0), getFluidModel(0)->numActiveParticles());
+		m_mesh_projector->move_particles_inside(getFluidModel(0), getFluidModel(0)->getAllPosition().size());
 	} else {
 		m_mesh_projector->reset_is_project();
 	}
@@ -804,30 +804,74 @@ bool Simulation::load_mesh(const unsigned frame_counter) {
 	return false;
 }
 
-double Simulation::calcu_one_step_loss(const double *viscosity, const int viscosity_dimension) {
-	const auto fm = getFluidModel(0);
-
-	// save state
-	const FluidModel::FluidModelState start_state = fm->save_state();
-	const Real current_time = TimeManager::getCurrent()->getTime();
-	const unsigned current_frame_number = TimeManager::getCurrent()->getFrame();
-	unsigned prev_counter = m_counter;
-	std::vector<BoundaryModel::BoundaryModelState> boundary_states;
-	for (unsigned int i = 0; i < numberOfBoundaryModels(); i++) {
-		BoundaryModel::BoundaryModelState s = getBoundaryModel(i)->save_state();
-		boundary_states.push_back(std::move(s));
+std::unique_ptr<Simulation::SimulationState> Simulation::save_simulation_state() const {
+	auto simulation_state = std::make_unique<SimulationState>();
+	simulation_state->fluid_state = getFluidModel(0)->save_state();
+	for (unsigned int i = 0; i < numberOfBoundaryModels(); ++i) {
+		simulation_state->boundary_states.push_back(getBoundaryModel(i)->save_state());
 	}
-	TimeStep::TimeStepState time_step_state = m_timeStep->save_state();
+	simulation_state->time_step_state = m_timeStep->save_state();
+	simulation_state->current_time = TimeManager::getCurrent()->getTime();
+	simulation_state->current_frame_number = TimeManager::getCurrent()->getFrame();
+	simulation_state->counter = m_counter;
+	simulation_state->valid_ = true;
 
-	// load init state
+	return simulation_state;
+}
+
+void Simulation::load_simulation_state(const SimulationState &state) {
+	getFluidModel(0)->load_state(*state.fluid_state);
+	for (unsigned int i = 0; i < numberOfBoundaryModels(); ++i) {
+		getBoundaryModel(i)->load_state(*state.boundary_states[i]);
+	}
+	m_timeStep->load_state(*state.time_step_state);
+	m_counter = state.counter;
+	performNeighborhoodSearchSort();
+	TimeManager::getCurrent()->setTime(state.current_time);
+	TimeManager::getCurrent()->setFrame(state.current_frame_number);
+}
+
+void Simulation::load_init_state() {
 	TimeManager::getCurrent()->setTime(0.0);
 	TimeManager::getCurrent()->setFrame(0);
-	fm->load_init_state();
-	for (unsigned int i = 0; i < numberOfBoundaryModels(); i++)
+	getFluidModel(0)->load_init_state();
+	for (unsigned int i = 0; i < numberOfBoundaryModels(); ++i)
 		getBoundaryModel(i)->reset();
 	m_counter = 0;
 	if (m_timeStep)
 		m_timeStep->reset();
+}
+
+double Simulation::calcu_one_step_loss(const double *viscosity, const int viscosity_dimension) {
+	const auto fm = getFluidModel(0);
+
+	// save state
+	// const FluidModel::FluidModelState start_state = fm->save_state();
+	// const Real current_time = TimeManager::getCurrent()->getTime();
+	// const unsigned current_frame_number = TimeManager::getCurrent()->getFrame();
+	// unsigned prev_counter = m_counter;
+	// std::vector<BoundaryModel::BoundaryModelState> boundary_states;
+	// for (unsigned int i = 0; i < numberOfBoundaryModels(); i++) {
+	// 	BoundaryModel::BoundaryModelState s = getBoundaryModel(i)->save_state();
+	// 	boundary_states.push_back(std::move(s));
+	// }
+	// TimeStep::TimeStepState time_step_state = m_timeStep->save_state();
+	auto simulation_state = save_simulation_state();
+
+	// load init state
+	// TimeManager::getCurrent()->setTime(0.0);
+	// TimeManager::getCurrent()->setFrame(0);
+	// fm->load_init_state();
+	// for (unsigned int i = 0; i < numberOfBoundaryModels(); i++)
+	// 	getBoundaryModel(i)->reset();
+	// m_counter = 0;
+	// if (m_timeStep)
+	// 	m_timeStep->reset();
+	// if (m_prev_state) {
+	// 	load_simulation_state(m_prev_state);
+	// } else {
+		load_init_state();
+	// }
 
 	fm->getViscosityBase()->setViscosity(static_cast<Real>(viscosity[0])); // change vis
 	for (int i = 0; i < m_frame_interval; ++i) {
@@ -842,15 +886,17 @@ double Simulation::calcu_one_step_loss(const double *viscosity, const int viscos
 	);
 
 	// load former state
-	fm->load_state(start_state);
-	for (unsigned int i = 0; i < numberOfBoundaryModels(); i++) {
-			getBoundaryModel(i)->load_state(boundary_states[i]);
-	}
-	m_timeStep->load_state(time_step_state);
-	m_counter = prev_counter;
-	performNeighborhoodSearchSort();
-	TimeManager::getCurrent()->setTime(current_time);
-	TimeManager::getCurrent()->setFrame(current_frame_number);
+	// fm->load_state(start_state);
+	// for (unsigned int i = 0; i < numberOfBoundaryModels(); i++) {
+	// 		getBoundaryModel(i)->load_state(boundary_states[i]);
+	// }
+	// m_timeStep->load_state(time_step_state);
+	// m_counter = prev_counter;
+	// performNeighborhoodSearchSort();
+	// TimeManager::getCurrent()->setTime(current_time);
+	// TimeManager::getCurrent()->setFrame(current_frame_number);
+	load_simulation_state(*simulation_state);
+	// m_prev_state = std::move(simulation_state);
 
 	return loss;
 }
@@ -859,7 +905,7 @@ void Simulation::viscosity_predict(const unsigned frame_interval) {
 	const Real vis_prev = getFluidModel(0)->getViscosityBase()->getViscosity();
 	const double sigma = std::max(2.0 * vis_prev, 0.1);
 	m_frame_interval = frame_interval;
-	const std::vector<double> x0{ vis_prev };
+	const std::vector<double> x0{vis_prev};
 	libcmaes::CMAParameters<> cmaparams(1, x0.data(), sigma);
 
 	cmaparams.set_ftarget(5.0);	// stop

@@ -40,7 +40,7 @@ namespace SPH
 
 			virtual void reset();
 
-			BoundaryModelState save_state() const override;
+			std::unique_ptr<BoundaryModelState> save_state() const override;
 			void load_state(const BoundaryModelState &state) override;
 
 			Discregrid::DiscreteGrid *getMap() { return m_map; }

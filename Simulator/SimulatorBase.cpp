@@ -1596,9 +1596,12 @@ void SimulatorBase::step()
 
 			if (m_frameCounter > 4 && m_frameCounter % 5 == 0 && Simulation::getCurrent()->load_mesh(m_frameCounter)) {
 				const unsigned fluid_frame = TimeManager::getCurrent()->getFrame();
+				std::cout << "fluid_frame: " << fluid_frame << std::ends;
+				// std::cout << "prev_frame: " << m_prev_frame << std::endl;
 				Simulation::getCurrent()->viscosity_predict(fluid_frame);
+				// m_prev_frame = fluid_frame;
 			}
-			// Simulation::getCurrent()->particle_project(m_frameCounter);
+			Simulation::getCurrent()->particle_project(m_frameCounter);
 		}
 
 		for (size_t i = 0; i < m_particleExporters.size(); i++)

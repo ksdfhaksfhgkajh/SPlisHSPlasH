@@ -71,20 +71,18 @@ void BoundaryModel_Bender2019::reset()
 	m_maxVel = 0.0;
 }
 
-BoundaryModel_Bender2019::BoundaryModelState BoundaryModel_Bender2019::save_state() const
-{
+std::unique_ptr<BoundaryModel_Bender2019::BoundaryModelState> BoundaryModel_Bender2019::save_state() const {
 	/* ---- 把基类部分存进去 ---- */
-	BoundaryModelState s = BoundaryModel::save_state();
+	auto s = BoundaryModel::save_state();
 	/* ---- 派生类自己的字段 ---- */
-	s.max_dist = m_maxDist;
-	s.max_vel  = m_maxVel;
+	s->max_dist = m_maxDist;
+	s->max_vel  = m_maxVel;
 	return s;
 }
 
-void BoundaryModel_Bender2019::load_state(const BoundaryModelState &s)
-{
+void BoundaryModel_Bender2019::load_state(const BoundaryModelState &s) {
 	/* ---- 先恢复基类 ---- */
-	BoundaryModel::load_state(s);    // 隐式地把 s 视作 BoundaryModelState
+	BoundaryModel::load_state(s);
 
 	/* ---- 再恢复新增字段 ---- */
 	m_maxDist = s.max_dist;

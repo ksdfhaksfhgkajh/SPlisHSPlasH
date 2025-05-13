@@ -112,7 +112,7 @@ namespace SPH
 				unsigned int n_points;
 			};
 
-			FluidModelState save_state() const;
+			std::unique_ptr<FluidModelState> save_state() const;
 			void load_state(const FluidModelState &state);
 			void load_init_state();
 

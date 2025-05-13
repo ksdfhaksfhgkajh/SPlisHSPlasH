@@ -17,6 +17,8 @@
 #include "ViscosityPredict/MeshProjector.h"
 #include <libcmaes/cmaes.h>
 
+#include "TimeStep.h"
+
 
 /** Loop over the fluid neighbors of all fluid phases. 
 * Simulation *sim and unsigned int fluidModelIndex must be defined.
@@ -285,6 +287,23 @@ namespace SPH
 			}
 		};
 
+
+		struct SimulationState {
+			std::unique_ptr<FluidModel::FluidModelState> fluid_state;
+			std::vector<std::unique_ptr<BoundaryModel::BoundaryModelState>> boundary_states;
+			std::unique_ptr<TimeStep::TimeStepState> time_step_state;
+
+			Real current_time;
+			unsigned current_frame_number;
+			unsigned counter;
+
+			friend Simulation;
+			explicit operator bool() const { return valid_; }
+
+		private:
+			bool valid_{false};
+		};
+
 	protected:
 		std::vector<FluidModel*> m_fluidModels;
 		std::vector<BoundaryModel*> m_boundaryModels;
@@ -321,6 +340,9 @@ namespace SPH
 		bool m_simulationIsInitialized;
 		std::unique_ptr<MeshProjector> m_mesh_projector;
 		unsigned int m_frame_interval{};
+
+		std::unique_ptr<SimulationState> m_prev_state;
+
 #ifdef USE_DEBUG_TOOLS
 		DebugTools* m_debugTools;
 #endif
@@ -330,6 +352,10 @@ namespace SPH
 		void registerNonpressureForces();
 
 		double calcu_one_step_loss(const double *viscosity, const int viscosity_dimension);
+
+		std::unique_ptr<SimulationState> save_simulation_state() const;
+		void load_simulation_state(const SimulationState &state);
+		void load_init_state();
 		
 	private:
 		static Simulation *current;
@@ -357,11 +383,13 @@ namespace SPH
 
 		void addFluidModel(const std::string &id, const unsigned int nFluidParticles, Vector3r* fluidParticles, Vector3r* fluidVelocities, unsigned int* fluidObjectIds, const unsigned int nMaxEmitterParticles);
 		FluidModel *getFluidModel(const unsigned int index) { return m_fluidModels[index]; }
+		const FluidModel* getFluidModel(const unsigned int index) const { return m_fluidModels[index]; }
 		FluidModel *getFluidModelFromPointSet(const unsigned int pointSetIndex) { return static_cast<FluidModel*>(m_neighborhoodSearch->point_set(pointSetIndex).get_user_data()); }
 		const unsigned int numberOfFluidModels() const { return static_cast<unsigned int>(m_fluidModels.size()); }
 
 		void addBoundaryModel(BoundaryModel *bm);
 		BoundaryModel *getBoundaryModel(const unsigned int index) { return m_boundaryModels[index]; }
+		const BoundaryModel* getBoundaryModel(const unsigned int index) const { return m_boundaryModels[index]; }
 		BoundaryModel *getBoundaryModelFromPointSet(const unsigned int pointSetIndex) { return static_cast<BoundaryModel*>(m_neighborhoodSearch->point_set(pointSetIndex).get_user_data()); }
 		const unsigned int numberOfBoundaryModels() const { return static_cast<unsigned int>(m_boundaryModels.size()); }
 		void updateBoundaryVolume();

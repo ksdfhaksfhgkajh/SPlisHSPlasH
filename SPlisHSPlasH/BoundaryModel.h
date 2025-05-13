@@ -50,7 +50,7 @@ namespace SPH
 			virtual void saveState(BinaryFileWriter &binWriter) {};
 			virtual void loadState(BinaryFileReader &binReader) {};
 
-			virtual BoundaryModelState save_state() const;
+			virtual std::unique_ptr<BoundaryModelState> save_state() const;
 			virtual void load_state(const BoundaryModelState &state);
 
 			RigidBodyObject* getRigidBodyObject() { return m_rigidBody; }

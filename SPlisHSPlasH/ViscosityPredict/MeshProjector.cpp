@@ -57,7 +57,6 @@ void MeshProjector::move_particles_inside(SPH::FluidModel* model, const unsigned
             unsigned int idx_in = inside_indices[rng() % inside_indices.size()];
             Real rho = model->getDensity(idx_in);
             if (rho < 1.0e-8) {
-
                 continue;
             }
 

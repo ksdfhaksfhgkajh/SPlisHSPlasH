@@ -89,6 +89,7 @@ namespace SPH
 		std::vector<Exporter> m_particleExporters;
 		std::vector<Exporter> m_rbExporters;
 		bool m_updateGUI;
+		unsigned m_prev_frame{0};
 #ifdef DL_OUTPUT
 		Real m_nextTiming;
 #endif

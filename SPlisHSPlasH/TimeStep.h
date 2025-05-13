@@ -68,7 +68,7 @@ namespace SPH
 		virtual void saveState(BinaryFileWriter &binWriter) {};
 		virtual void loadState(BinaryFileReader &binReader) {};
 
-		virtual TimeStepState save_state() const;
+		virtual std::unique_ptr<TimeStepState> save_state() const;
 		virtual void load_state(const TimeStepState& state);
 
 #ifdef USE_PERFORMANCE_OPTIMIZATION

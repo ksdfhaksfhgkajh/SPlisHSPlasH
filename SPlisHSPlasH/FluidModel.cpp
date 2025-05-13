@@ -758,13 +758,13 @@ void SPH::FluidModel::loadState(BinaryFileReader &binReader)
 	m_emitterSystem->loadState(binReader);
 }
 
-FluidModel::FluidModelState FluidModel::save_state() const {
-	FluidModelState state;
-	state.position = m_x;
-	state.velocity = m_v;
-	state.acceleration = m_a;
-	state.density = m_density;
-	state.n_points = numActiveParticles();
+std::unique_ptr<FluidModel::FluidModelState> FluidModel::save_state() const {
+	auto state = std::make_unique<FluidModelState>();
+	state->position = m_x;
+	state->velocity = m_v;
+	state->acceleration = m_a;
+	state->density = m_density;
+	state->n_points = numActiveParticles();
 	return state;
 }
 

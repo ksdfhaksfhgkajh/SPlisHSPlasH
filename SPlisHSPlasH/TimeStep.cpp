@@ -564,9 +564,9 @@ void TimeStep::precomputeValues()
 
 #endif
 
-TimeStep::TimeStepState TimeStep::save_state() const {
-	TimeStepState state;
-	state.iterations = m_iterations;
+unique_ptr<TimeStep::TimeStepState> TimeStep::save_state() const {
+	auto state = std::make_unique<TimeStepState>();
+	state->iterations = m_iterations;
 	return state;
 }
 

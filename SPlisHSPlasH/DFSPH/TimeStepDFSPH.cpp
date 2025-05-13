@@ -1395,12 +1395,13 @@ Real TimeStepDFSPH::compute_aij_pj(const unsigned int fluidModelIndex, const uns
 
 #endif
 
-TimeStep::TimeStepState TimeStepDFSPH::save_state() const {
-	TimeStepState state = TimeStep::save_state();
-	state.iterations = m_iterationsV;
-	state.sim_data_dfsph = m_simulationData;
+std::unique_ptr<TimeStep::TimeStepState> TimeStepDFSPH::save_state() const {
+	auto state = TimeStep::save_state();
+	state->iterations = m_iterationsV;
+	state->sim_data_dfsph = m_simulationData;
 	return state;
 }
+
 void TimeStepDFSPH::load_state(const TimeStepState& state) {
 	m_iterations = state.iterations;
 	m_iterationsV = state.iterationsV;

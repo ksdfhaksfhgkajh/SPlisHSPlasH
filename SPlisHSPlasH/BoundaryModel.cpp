@@ -53,20 +53,20 @@ void BoundaryModel::clearForceAndTorque()
 	}
 }
 
-BoundaryModel::BoundaryModelState BoundaryModel::save_state() const
+std::unique_ptr<BoundaryModel::BoundaryModelState> BoundaryModel::save_state() const
 {
-	BoundaryModelState s;
+	auto s = std::make_unique<BoundaryModelState>();
 
 	// 1) 刚体状态 -------------------------------------------
-	s.position        = m_rigidBody->getPosition();
-	s.rotation        = m_rigidBody->getRotation();
-	s.velocity        = m_rigidBody->getVelocity();
-	s.angularVelocity = m_rigidBody->getAngularVelocity();
-	s.isDynamic       = m_rigidBody->isDynamic();
+	s->position        = m_rigidBody->getPosition();
+	s->rotation        = m_rigidBody->getRotation();
+	s->velocity        = m_rigidBody->getVelocity();
+	s->angularVelocity = m_rigidBody->getAngularVelocity();
+	s->isDynamic       = m_rigidBody->isDynamic();
 
 	// 2) 力 / 矩 ---------------------------------------------
-	s.forcePerThread  = m_forcePerThread;   // 直接拷贝
-	s.torquePerThread = m_torquePerThread;
+	s->forcePerThread  = m_forcePerThread;   // 直接拷贝
+	s->torquePerThread = m_torquePerThread;
 
 	return s;     // 返回值拷贝或 NRVO
 }
