@@ -300,8 +300,10 @@ namespace SPH
 			friend Simulation;
 			explicit operator bool() const { return valid_; }
 
+			SimulationState() : current_time(0.0), current_frame_number(0), counter(0), valid_(false) {};
+
 		private:
-			bool valid_{false};
+			bool valid_;
 		};
 
 	protected:
@@ -341,6 +343,7 @@ namespace SPH
 		std::unique_ptr<MeshProjector> m_mesh_projector;
 		unsigned int m_frame_interval{};
 
+		std::unique_ptr<SimulationState> m_curr_state;
 		std::unique_ptr<SimulationState> m_prev_state;
 
 #ifdef USE_DEBUG_TOOLS

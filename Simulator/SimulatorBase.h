@@ -169,6 +169,7 @@ namespace SPH
 		void readParameters();
 
 		void step();
+		void vis_predict_step();
 
 		void writeScene();
 		void writeSceneFile(const std::string& fileName);
