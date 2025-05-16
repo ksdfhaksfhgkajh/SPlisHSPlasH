@@ -46,7 +46,7 @@ public:
     MeshProjector() : m_is_project(true) {}
     bool load_mesh(const std::string& filepath);
     double project_particles(SPH::FluidModel* model) const;
-    void move_particles_inside(SPH::FluidModel* model, const unsigned particle_num) const;
+    void move_particles_inside(SPH::FluidModel* model, const unsigned particle_num, const Real radius) const;
 
     void sample_interior_points(std::size_t num_samples);
     double projection_loss_with_interior(

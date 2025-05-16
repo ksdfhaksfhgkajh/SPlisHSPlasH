@@ -787,7 +787,10 @@ void Simulation::particle_project(const unsigned frame_counter) {
 	file_path += file_name;
 	if  (std::filesystem::exists(file_path)) {
 		m_mesh_projector->load_mesh(file_path);
-		m_mesh_projector->move_particles_inside(getFluidModel(0), getFluidModel(0)->getAllPosition().size());
+		m_mesh_projector->move_particles_inside(getFluidModel(0),
+												getFluidModel(0)->numActiveParticles(),
+												getSupportRadius());
+		getNeighborhoodSearch()->find_neighbors(true);
 	} else {
 		m_mesh_projector->reset_is_project();
 	}
@@ -843,16 +846,21 @@ void Simulation::load_init_state() {
 		m_timeStep->reset();
 }
 
-double Simulation::calcu_one_step_loss(const double *viscosity, const int viscosity_dimension) {
+double Simulation::calcu_one_step_loss(const double *viscosity,
+									   const int viscosity_dimension,
+									   const std::unique_ptr<SimulationState> &curr_state,
+									   std::unique_ptr<SimulationState> &best_state,
+									   double& best_loss,
+									   const unsigned frame_interval) {
 	const auto fm = getFluidModel(0);
-	if (*m_prev_state) {
-		load_simulation_state(*m_prev_state);
-	} else {
+	 if (*m_prev_state) {
+	 	load_simulation_state(*m_prev_state);
+	 } else {
 		load_init_state();
-	}
+	 }
 
 	fm->getViscosityBase()->setViscosity(static_cast<Real>(viscosity[0])); // change vis
-	for (int i = 0; i < m_frame_interval; ++i) {
+	for (int i = 0; i < frame_interval; ++i) {
 		getTimeStep()->step(); // run single step simulation
 	}
 
@@ -863,25 +871,42 @@ double Simulation::calcu_one_step_loss(const double *viscosity, const int viscos
 		true
 	);
 
-	load_simulation_state(*m_curr_state);
+	if (best_state == nullptr || loss < best_loss) {
+		best_state = save_simulation_state();
+		best_loss = loss;
+	}
+	load_simulation_state(*curr_state);
+
 	return loss;
 }
 
 void Simulation::viscosity_predict(const unsigned frame_interval) {
 	const Real vis_prev = getFluidModel(0)->getViscosityBase()->getViscosity();
 	const double sigma = std::max(2.0 * vis_prev, 0.1);
-	m_curr_state = save_simulation_state();
-	m_frame_interval = frame_interval;
+	auto curr_state = save_simulation_state();
+	std::unique_ptr<SimulationState> best_state;
+	double best_loss = DBL_MAX;
+
 	const std::vector<double> x0{vis_prev};
 	libcmaes::CMAParameters<> cmaparams(1, x0.data(), sigma);
 
 	cmaparams.set_ftarget(5.0);	// stop
 	cmaparams.set_max_fevals(50);
-	libcmaes::FitFunc fsphere =
-	  std::bind(&Simulation::calcu_one_step_loss,
-				this,
-				std::placeholders::_1,
-				std::placeholders::_2);
+	// libcmaes::FitFunc fsphere =
+	//   std::bind(&Simulation::calcu_one_step_loss,
+	// 			this,
+	// 			std::placeholders::_1,
+	// 			std::placeholders::_2);
+
+	libcmaes::FitFunc fsphere = [this, &curr_state, &best_state, &best_loss, frame_interval]
+	(const double *viscosity, const int viscosity_dimension) -> double {
+		return calcu_one_step_loss(viscosity,
+								   viscosity_dimension,
+								   curr_state,
+								   best_state,
+								   best_loss,
+								   frame_interval);
+	};
 
 	const libcmaes::CMASolutions cmasols = libcmaes::cmaes<>(fsphere, cmaparams);
 	const auto best = cmasols.best_candidate();
@@ -900,5 +925,6 @@ void Simulation::viscosity_predict(const unsigned frame_interval) {
 	getFluidModel(0)->getViscosityBase()->setViscosity(static_cast<Real>(vis_accum));
 	std::cout << "best loss = " << fopt << ", viscosity = " << vis_accum << ", vis_opt = " << vis_opt << std::endl;
 
-	m_prev_state = std::move(m_curr_state);
+	load_simulation_state(*best_state);
+	m_prev_state = std::move(best_state);
 }

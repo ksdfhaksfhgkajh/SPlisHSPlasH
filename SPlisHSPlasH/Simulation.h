@@ -340,10 +340,8 @@ namespace SPH
 		std::vector<NonPressureForceMethod> m_vorticityMethods;
 		std::vector<NonPressureForceMethod> m_viscoMethods;
 		bool m_simulationIsInitialized;
-		std::unique_ptr<MeshProjector> m_mesh_projector;
-		unsigned int m_frame_interval{};
 
-		std::unique_ptr<SimulationState> m_curr_state;
+		std::unique_ptr<MeshProjector> m_mesh_projector;
 		std::unique_ptr<SimulationState> m_prev_state;
 
 #ifdef USE_DEBUG_TOOLS
@@ -354,7 +352,12 @@ namespace SPH
 
 		void registerNonpressureForces();
 
-		double calcu_one_step_loss(const double *viscosity, const int viscosity_dimension);
+		double calcu_one_step_loss(const double *viscosity,
+								   const int viscosity_dimension,
+								   const std::unique_ptr<SimulationState> &curr_state,
+								   std::unique_ptr<SimulationState> &best_state,
+								   double& best_loss,
+								   const unsigned frame_interval);
 
 		std::unique_ptr<SimulationState> save_simulation_state() const;
 		void load_simulation_state(const SimulationState &state);

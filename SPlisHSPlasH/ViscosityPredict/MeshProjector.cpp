@@ -30,7 +30,7 @@ double MeshProjector::project_particles(SPH::FluidModel* model) const {
     return distance_sum;
 }
 
-void MeshProjector::move_particles_inside(SPH::FluidModel* model, const unsigned particle_num) const {
+void MeshProjector::move_particles_inside(SPH::FluidModel* model, const unsigned particle_num, const Real radius) const {
 
     // 1 find all the particles in the mesh
     std::vector<unsigned int> inside_indices;
@@ -42,48 +42,76 @@ void MeshProjector::move_particles_inside(SPH::FluidModel* model, const unsigned
     if (inside_indices.empty())
         return;
 
-    // 2 change pos & vel if particle is out of mesh
     static std::mt19937 rng(
             static_cast<unsigned int>(
                     std::chrono::system_clock::now().time_since_epoch().count()
             )
     );  // gen random nums
-    std::uniform_real_distribution<Real> dist_01(0.0f, 1.0f); // [0,1) distribution
-    for (unsigned int i = 0; i < particle_num; ++i)
+
+    // 2 change pos & vel if particle is out of mesh
+    std::uniform_real_distribution<Real> dist(-1.0, 1.0);
+    for (unsigned i = 0; i < particle_num; ++i)
     {
-        if (!m_is_inside_mesh(m_eigen_to_CGALPoint(model->getPosition(i))))
-        {
-            // 2.1 randomly choose a particle which is inside the mesh
-            unsigned int idx_in = inside_indices[rng() % inside_indices.size()];
-            Real rho = model->getDensity(idx_in);
-            if (rho < 1.0e-8) {
-                continue;
-            }
+        if (m_is_inside_mesh(m_eigen_to_CGALPoint(model->getPosition(i))))
+            continue;
 
-            // 2.2 calcu reference radius
-            Real m = model->getMass(idx_in);
-            Real volume = m / rho;
-            Real r_base = std::cbrt(volume);
+        unsigned idx_in = inside_indices[rng() % inside_indices.size()];
+        Real rho0      = model->getDensity(idx_in);
+        if (rho0 < 1e-8) continue;
 
-            // 2.3 gen a random bias
-            Vector3f rand_dir;
-            while (true) {
-                Real rx = dist_01(rng) * 2.0 - 1.0;
-                Real ry = dist_01(rng) * 2.0 - 1.0;
-                Real rz = dist_01(rng) * 2.0 - 1.0;
-                rand_dir = Vector3f(rx, ry, rz);
-                if (rand_dir.squaredNorm() <= 1.0)
-                    break;
-            }
+        // 基于 rest-density 推算体素半径
+        Real r_base = std::cbrt(model->getMass(idx_in) / rho0);
 
-            Real scale = 1.0;
-            rand_dir *= (scale * r_base);
+        Vector3r new_pos;
+        int trial = 0;
+        do {
+            Vector3r dir(dist(rng), dist(rng), dist(rng));
+            if (dir.squaredNorm() > 1.0) continue;
+            new_pos = model->getPosition(idx_in) + dir * (2.0 * r_base); // 放大系数≥2
+        } while (++trial < 20 &&
+                 (new_pos - model->getPosition(idx_in)).squaredNorm() < 0.64 * radius * radius);
 
-            // 2.4 new pos, new vel
-            model->setPosition(i, model->getPosition(idx_in) + rand_dir);
-            model->setVelocity(i, model->getVelocity(idx_in));
-        }
+        model->setPosition(i, new_pos);
+        model->setVelocity(i, model->getVelocity(idx_in));
     }
+
+
+    // std::uniform_real_distribution<Real> dist_01(0.0f, 1.0f); // [0,1) distribution
+    // for (unsigned int i = 0; i < particle_num; ++i)
+    // {
+    //     if (!m_is_inside_mesh(m_eigen_to_CGALPoint(model->getPosition(i))))
+    //     {
+    //         // 2.1 randomly choose a particle which is inside the mesh
+    //         unsigned int idx_in = inside_indices[rng() % inside_indices.size()];
+    //         Real rho = model->getDensity(idx_in);
+    //         if (rho < 1.0e-8) {
+    //             continue;
+    //         }
+    //
+    //         // 2.2 calcu reference radius
+    //         Real m = model->getMass(idx_in);
+    //         Real volume = m / rho;
+    //         Real r_base = std::cbrt(volume);
+    //
+    //         // 2.3 gen a random bias
+    //         Vector3f rand_dir;
+    //         while (true) {
+    //             Real rx = dist_01(rng) * 2.0 - 1.0;
+    //             Real ry = dist_01(rng) * 2.0 - 1.0;
+    //             Real rz = dist_01(rng) * 2.0 - 1.0;
+    //             rand_dir = Vector3f(rx, ry, rz);
+    //             if (rand_dir.squaredNorm() <= 1.0)
+    //                 break;
+    //         }
+    //
+    //         Real scale = 1.0;
+    //         rand_dir *= (scale * r_base);
+    //
+    //         // 2.4 new pos, new vel
+    //         model->setPosition(i, model->getPosition(idx_in) + rand_dir);
+    //         model->setVelocity(i, model->getVelocity(idx_in));
+    //     }
+    // }
 }
 
 void MeshProjector::m_fill_holes_on_mesh(Mesh& mesh) {
