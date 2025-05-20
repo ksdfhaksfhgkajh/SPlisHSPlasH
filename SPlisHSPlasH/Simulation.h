@@ -521,6 +521,8 @@ namespace SPH
 		}
 
 		void viscosity_predict(const unsigned frame_interval);
+
+		double calcu_loss() const;
 	};
 }
 

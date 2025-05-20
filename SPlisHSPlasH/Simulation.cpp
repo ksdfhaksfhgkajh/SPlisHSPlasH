@@ -805,6 +805,7 @@ bool Simulation::load_mesh(const unsigned frame_counter) {
 		m_mesh_projector->load_mesh(file_path);
 		return true;
 	}
+	m_mesh_projector->reset_is_project();
 	return false;
 }
 
@@ -925,6 +926,20 @@ void Simulation::viscosity_predict(const unsigned frame_interval) {
 	getFluidModel(0)->getViscosityBase()->setViscosity(static_cast<Real>(vis_accum));
 	std::cout << "best loss = " << fopt << ", viscosity = " << vis_accum << ", vis_opt = " << vis_opt << std::endl;
 
-	load_simulation_state(*best_state);
+	if (*m_prev_state) {
+		load_simulation_state(*m_prev_state);
+	} else {
+		load_init_state();
+	} // back to the state before predicted
 	m_prev_state = std::move(best_state);
+}
+
+double Simulation::calcu_loss() const {
+	const auto fm = getFluidModel(0);
+	m_mesh_projector->sample_interior_points(fm->numActiveParticles());
+	return m_mesh_projector->projection_loss_with_interior(
+		fm->getAllPosition(),
+		fm->numActiveParticles(),
+		true
+	);
 }

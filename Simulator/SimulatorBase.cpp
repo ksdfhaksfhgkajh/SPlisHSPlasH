@@ -917,7 +917,15 @@ void SimulatorBase::timeStep()
 
 		m_boundarySimulator->timeStep();
 
-		vis_predict_step(); // // save current state or particles
+		if (Simulation::getCurrent()->is_project()) {
+			if (m_is_predict) {
+				vis_predict_step();
+			} else {
+				output_after_pre();
+			}
+		} else {
+			step();
+		}
 
 		INCREASE_COUNTER("Time step size", TimeManager::getCurrent()->getTimeStepSize());
 
@@ -1574,54 +1582,49 @@ void SimulatorBase::particleInfo(std::vector<std::vector<unsigned int>> &particl
 	}
 }
 
+void SimulatorBase::output_after_pre() {
+	if (TimeManager::getCurrent()->getFrame() % 10 == 1) {
+		for (const auto& p_exporters : m_particleExporters) {
+			p_exporters.m_exporter->step(m_frameCounter);
+		}
+		for (const auto& rb_exporter : m_rbExporters) {
+			rb_exporter.m_exporter->step(m_frameCounter);
+		}
+		if (m_frameCounter > 4 && m_frameCounter % 5 == 0 && Simulation::getCurrent()->load_mesh(m_frameCounter)) {
+			std::cout << "Re_calcu_loss:" << Simulation::getCurrent()->calcu_loss() << std::endl;
+		}
+		++m_frameCounter;
+		--m_output_frame_num;
+	}
+	if (m_output_frame_num == 0) {
+		m_is_predict = true;
+	}
+}
+
 void SimulatorBase::vis_predict_step() {
 	if (TimeManager::getCurrent()->getFrame() % 10 == 1) {	// getTime() == interval
 		// ////////////////////////////////////////////////////////////////////////
 		//  projection
 		// ////////////////////////////////////////////////////////////////////////
-		if (Simulation::getCurrent()->is_project()) {
-			if (m_frameCounter > 4 && m_frameCounter % 10 == 0 && Simulation::getCurrent()->load_mesh(m_frameCounter)) {
-				const unsigned fluid_frame = TimeManager::getCurrent()->getFrame();
-				std::cout << "fluid_frame: " << fluid_frame << std::endl;
-				std::cout << "prev_frame: " << m_prev_frame << std::endl;
-				Simulation::getCurrent()->viscosity_predict(fluid_frame - m_prev_frame);
-				m_prev_frame = fluid_frame;
-			}
-			// Simulation::getCurrent()->particle_project(m_frameCounter);
+		if (m_frameCounter > 4 && m_frameCounter % 10 == 0 && Simulation::getCurrent()->load_mesh(m_frameCounter)) {
+			const unsigned fluid_frame = TimeManager::getCurrent()->getFrame();
+			std::cout << "fluid_frame: " << fluid_frame << std::endl;
+			std::cout << "prev_frame: " << m_prev_frame << std::endl;
+			Simulation::getCurrent()->viscosity_predict(fluid_frame - m_prev_frame);
+			m_prev_frame = fluid_frame;
+			m_is_predict = false;
+			m_frameCounter -= m_output_frame_num;
+			m_output_frame_num += 2;	// avoid load the same again
+			return;
 		}
-
-		for (size_t i = 0; i < m_particleExporters.size(); i++)
-		{
-			m_particleExporters[i].m_exporter->step(m_frameCounter);
-		}
-		for (size_t i = 0; i < m_rbExporters.size(); i++)
-			m_rbExporters[i].m_exporter->step(m_frameCounter);
-
-		m_nextFrameTime += static_cast<Real>(1.0) / m_framesPerSecond;
 		++m_frameCounter;
+		++m_output_frame_num;
 	}
-	if (TimeManager::getCurrent()->getTime() >= m_nextFrameTimeState)
-	{
-		m_nextFrameTimeState += static_cast<Real>(1.0) / m_framesPerSecondState;
-		if (m_enableStateExport)
-			saveState();
-	}
-#ifdef DL_OUTPUT
-	if (TimeManager::getCurrent()->getTime() >= m_nextTiming)
-	{
-		LOG_INFO << "---------------------------------------------------------------------------";
-		LOG_INFO << "Time: " << TimeManager::getCurrent()->getTime();
-		Timing::printAverageTimes();
-		Timing::printTimeSums();
-		Counting::printAverageCounts();
-		Counting::printCounterSums();
-		m_nextTiming += 1.0;
-	}
-#endif
 }
+
 void SimulatorBase::step()
 {
-	if (TimeManager::getCurrent()->getTime() >= m_nextFrameTime)
+	if (TimeManager::getCurrent()->getTime() >= m_nextFrameTime) // >= m_nextFrameTime
 	{
 		std::cout << "fluid_frame: " << TimeManager::getCurrent()->getFrame() << std::endl;
 

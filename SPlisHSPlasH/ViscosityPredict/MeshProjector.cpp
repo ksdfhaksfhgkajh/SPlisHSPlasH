@@ -17,7 +17,7 @@ bool MeshProjector::load_mesh(const std::string &filepath) {
 
 double MeshProjector::project_particles(SPH::FluidModel* model) const {
     double distance_sum{0.0};
-    size_t particle_num = model->getAllPosition().size();
+    const size_t particle_num = model->getAllPosition().size();
     for (size_t i = 0; i <= particle_num; ++i) {
         Point p_point = m_eigen_to_CGALPoint(model->getPosition(i));
         auto [is_projected, distance] = m_project_single_particle(p_point);
@@ -42,10 +42,10 @@ void MeshProjector::move_particles_inside(SPH::FluidModel* model, const unsigned
     if (inside_indices.empty())
         return;
 
+    std::random_device rd;
     static std::mt19937 rng(
-            static_cast<unsigned int>(
-                    std::chrono::system_clock::now().time_since_epoch().count()
-            )
+        rd()
+        // static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count())
     );  // gen random nums
 
     // 2 change pos & vel if particle is out of mesh
@@ -55,12 +55,12 @@ void MeshProjector::move_particles_inside(SPH::FluidModel* model, const unsigned
         if (m_is_inside_mesh(m_eigen_to_CGALPoint(model->getPosition(i))))
             continue;
 
-        unsigned idx_in = inside_indices[rng() % inside_indices.size()];
-        Real rho0      = model->getDensity(idx_in);
+        const unsigned idx_in = inside_indices[rng() % inside_indices.size()];
+        const Real rho0 = model->getDensity(idx_in);
         if (rho0 < 1e-8) continue;
 
         // 基于 rest-density 推算体素半径
-        Real r_base = std::cbrt(model->getMass(idx_in) / rho0);
+        const Real r_base = std::cbrt(model->getMass(idx_in) / rho0);
 
         Vector3r new_pos;
         int trial = 0;
@@ -123,7 +123,7 @@ void MeshProjector::m_fill_holes_on_mesh(Mesh& mesh) {
 }
 
 bool MeshProjector::m_is_inside_mesh(const Point& particle) const {
-    CGAL::Bounded_side side = (*m_inside_tester)(particle);
+    const CGAL::Bounded_side side = (*m_inside_tester)(particle);
     return (side == CGAL::ON_BOUNDED_SIDE || side == CGAL::ON_BOUNDARY);
 }
 
@@ -131,8 +131,8 @@ std::pair<bool, double> MeshProjector::m_project_single_particle(Point& particle
     if (m_is_inside_mesh(particle)) {
         return {true, 0.0};
     }
-    Point closest_point = m_tree.closest_point(particle);
-    double distance_2 = CGAL::squared_distance(particle, closest_point);
+    const Point closest_point = m_tree.closest_point(particle);
+    const double distance_2 = CGAL::squared_distance(particle, closest_point);
     particle = closest_point;
     return {false, std::sqrt(distance_2)};
 }
@@ -154,55 +154,40 @@ Vector3r MeshProjector::m_cgalPoint_to_eigen(const Point &p){
     };
 }
 
-void MeshProjector::sample_interior_points(std::size_t num_samples) {
+void MeshProjector::sample_interior_points(const size_t num_samples) {
     m_interior_samples.clear();
     if (m_mesh.is_empty() || num_samples == 0) return;
 
     // Build a point-in-polyhedron tester
-    CGAL::Side_of_triangle_mesh<Mesh, Kernel> point_inside(m_mesh);
+    const CGAL::Side_of_triangle_mesh<Mesh, Kernel> point_inside(m_mesh);
 
     // Compute mesh bounding box
-    CGAL::Bbox_3 bb = CGAL::Polygon_mesh_processing::bbox(m_mesh);
-    std::mt19937_64 gen((unsigned)std::random_device{}());
+    const CGAL::Bbox_3 bb = CGAL::Polygon_mesh_processing::bbox(m_mesh);
+    std::mt19937_64 gen(std::random_device{}());
     std::uniform_real_distribution<double> dx(bb.xmin(), bb.xmax());
     std::uniform_real_distribution<double> dy(bb.ymin(), bb.ymax());
     std::uniform_real_distribution<double> dz(bb.zmin(), bb.zmax());
 
     // Sample until we have enough interior points
-    while (m_interior_samples.size() < num_samples)
-    {
+    while (m_interior_samples.size() < num_samples) {
         Kernel::Point_3 p(dx(gen), dy(gen), dz(gen));
         if (point_inside(p) == CGAL::ON_BOUNDED_SIDE)
             m_interior_samples.push_back(p);
     }
 }
 
-
-double MeshProjector::projection_loss_with_interior(
-    const std::vector<Vector3r> &pts,
-    const unsigned activate_num,
-    bool use_square_error) const {
+double MeshProjector::projection_loss_with_interior(const std::vector<Vector3r> &pts,
+                                                    const unsigned activate_num,
+                                                    bool use_square_error) const {
     if (pts.empty()) return 0.0;
+
     // 1) Outside particles loss to mesh surface
     double sum_out = 0.0;
     const int N = static_cast<int>(activate_num);
 
-    // CGAL::Side_of_triangle_mesh<Mesh, Kernel> point_inside(m_mesh);
-    // int i = 0;
-    // for (auto const &v : pts)
-    // {
-    //     if (i >= N) break;
-    //     ++i;
-    //     Kernel::Point_3 p(v.x(), v.y(), v.z());
-    //     if (point_inside(p) == CGAL::ON_UNBOUNDED_SIDE)
-    //     {
-    //         Kernel::Point_3 c = m_tree.closest_point(p);
-    //         double sqd = CGAL::squared_distance(p, c);
-    //         sum_out += (use_square_error ? sqd : std::sqrt(sqd));
-    //     }
-    // }
-
-    #pragma omp parallel reduction(+:sum_out)
+    #pragma omp parallel default(none) \
+                shared(m_mesh, m_tree, pts, N, use_square_error) \
+                reduction(+:sum_out)
     {
         CGAL::Side_of_triangle_mesh<Mesh, Kernel> point_inside(m_mesh);
         #pragma omp for schedule(static)
@@ -211,7 +196,7 @@ double MeshProjector::projection_loss_with_interior(
             if (point_inside(p) == CGAL::ON_UNBOUNDED_SIDE) {
                 Kernel::Point_3 c = m_tree.closest_point(p);
                 double sqd = CGAL::squared_distance(p, c);
-                sum_out += (use_square_error ? sqd : std::sqrt(sqd));
+                sum_out += use_square_error ? sqd : std::sqrt(sqd);
             }
         }
     }
@@ -230,20 +215,16 @@ double MeshProjector::projection_loss_with_interior(
     Tree3 tree3(fluid_pts.begin(), fluid_pts.end());
 
     double sum_in = 0.0;
-    const int M = m_interior_samples.size();
-    // for (auto const &sp : m_interior_samples)
-    // {
-    //     Neighbor_search search(tree3, sp, 1);
-    //     double sqd = search.begin()->second;
-    //     sum_in += (use_square_error ? sqd : std::sqrt(sqd));
-    // }
-    #pragma omp parallel reduction(+:sum_in)
+    const int M = static_cast<int>(m_interior_samples.size());
+    #pragma omp parallel default(none) \
+                shared(M, tree3, m_interior_samples, use_square_error) \
+                reduction(+:sum_in)
     {
         #pragma omp for schedule(static)
-        for (int i =0; i < M; i++) {
+        for (int i = 0; i < M; i++) {
             Neighbor_search search(tree3, m_interior_samples[i], 1);
             double sqd = search.begin()->second;
-            sum_in += (use_square_error ? sqd : std::sqrt(sqd));
+            sum_in += use_square_error ? sqd : std::sqrt(sqd);
         }
     }
     // Return average loss

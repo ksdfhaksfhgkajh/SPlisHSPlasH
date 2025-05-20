@@ -90,6 +90,8 @@ namespace SPH
 		std::vector<Exporter> m_rbExporters;
 		bool m_updateGUI;
 		unsigned m_prev_frame{0};
+		unsigned m_is_predict{true};
+		unsigned m_output_frame_num{0};
 #ifdef DL_OUTPUT
 		Real m_nextTiming;
 #endif
@@ -170,6 +172,7 @@ namespace SPH
 
 		void step();
 		void vis_predict_step();
+		void output_after_pre();
 
 		void writeScene();
 		void writeSceneFile(const std::string& fileName);

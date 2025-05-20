@@ -48,9 +48,9 @@ public:
     double project_particles(SPH::FluidModel* model) const;
     void move_particles_inside(SPH::FluidModel* model, const unsigned particle_num, const Real radius) const;
 
-    void sample_interior_points(std::size_t num_samples);
+    void sample_interior_points(const size_t num_samples);
     double projection_loss_with_interior(
-        const std::vector<Vector3r> &particlePositions,
+        const std::vector<Vector3r> &pts,
         const unsigned activate_num,
         bool use_square_error = true) const;
 
